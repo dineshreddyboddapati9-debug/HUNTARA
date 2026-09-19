@@ -58,22 +58,14 @@ function cleanJobDescription(description: string): string {
   }
 
   cleaned = cleaned
-    .replace(
-      /<(br|\/p|\/div|\/li|\/h[1-6])\s*\/?>/gi,
-      " "
-    )
-    .replace(
-      /<(p|div|li|h[1-6])\b[^>]*>/gi,
-      ""
-    )
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6])\s*\/?>/gi, " ")
+    .replace(/<(p|div|li|h[1-6])\b[^>]*>/gi, "")
     .replace(/<[^>]*>/g, "");
 
   const textarea = document.createElement("textarea");
   textarea.innerHTML = cleaned;
 
-  return textarea.value
-    .replace(/\s+/g, " ")
-    .trim();
+  return textarea.value.replace(/\s+/g, " ").trim();
 }
 
 function formatDate(date: string | null): string {
@@ -95,19 +87,13 @@ function formatDate(date: string | null): string {
 }
 
 function formatSalary(job: Job): string | null {
-  if (
-    job.salary_min === null &&
-    job.salary_max === null
-  ) {
+  if (job.salary_min === null && job.salary_max === null) {
     return null;
   }
 
   const currency = job.salary_currency || "";
 
-  if (
-    job.salary_min !== null &&
-    job.salary_max !== null
-  ) {
+  if (job.salary_min !== null && job.salary_max !== null) {
     return `${currency} ${job.salary_min.toLocaleString()} - ${job.salary_max.toLocaleString()}`;
   }
 
@@ -124,8 +110,7 @@ function formatSalary(job: Job): string | null {
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [companies, setCompanies] =
-    useState<Record<string, string>>({});
+  const [companies, setCompanies] = useState<Record<string, string>>({});
 
   const [keyword, setKeyword] = useState("");
   const [location, setLocation] = useState("");
@@ -170,11 +155,6 @@ export default function JobsPage() {
           )
           .eq("is_active", true);
 
-        /*
-         * Keyword search:
-         * Search job title, description,
-         * and company name.
-         */
         if (keyword.trim()) {
           const searchTerm = keyword.trim();
 
@@ -185,10 +165,6 @@ export default function JobsPage() {
 
           const searchPattern = `%${safeSearchTerm}%`;
 
-          /*
-           * First find companies whose
-           * names match the keyword.
-           */
           const {
             data: matchingCompanies,
             error: companySearchError,
@@ -206,14 +182,6 @@ export default function JobsPage() {
               (company) => company.id
             );
 
-          /*
-           * Build the OR search.
-           *
-           * Search:
-           * 1. Job title
-           * 2. Job description
-           * 3. Company ID
-           */
           const searchConditions = [
             `title.ilike.${searchPattern}`,
             `description.ilike.${searchPattern}`,
@@ -376,21 +344,27 @@ export default function JobsPage() {
     totalJobs / JOBS_PER_PAGE
   );
 
+  const hasFilters =
+    keyword ||
+    location ||
+    language ||
+    remoteOnly;
+
   return (
     <main className="min-h-screen bg-slate-50">
       {/* Hero */}
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <div className="text-center">
-            <div className="mb-4 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700">
+            <div className="mb-4 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:text-sm">
               🔎 Search jobs from multiple sources
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
               Find Your Next Job
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:mt-4 sm:text-lg sm:leading-7">
               Discover relevant opportunities from
               employers and job sources in one simple
               search.
@@ -398,7 +372,7 @@ export default function JobsPage() {
           </div>
 
           {/* Search Box */}
-          <div className="mx-auto mt-10 max-w-6xl rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/50">
+          <div className="mx-auto mt-7 max-w-6xl rounded-2xl border border-slate-200 bg-white p-3 shadow-lg shadow-slate-200/50 sm:mt-10 sm:p-4">
             <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_0.8fr_auto]">
               {/* Keyword */}
               <div className="relative">
@@ -423,7 +397,7 @@ export default function JobsPage() {
                     )
                   }
                   placeholder="Job title, skill or keyword"
-                  className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 sm:h-14"
                 />
               </div>
 
@@ -450,7 +424,7 @@ export default function JobsPage() {
                     )
                   }
                   placeholder="City or location"
-                  className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 sm:h-14"
                 />
               </div>
 
@@ -475,7 +449,7 @@ export default function JobsPage() {
                       event.target.value
                     )
                   }
-                  className="h-14 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-10 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                  className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-10 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 sm:h-14"
                 >
                   <option value="">
                     All Languages
@@ -505,15 +479,15 @@ export default function JobsPage() {
               {/* Search button */}
               <button
                 type="button"
-                className="h-14 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+                className="h-12 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md active:scale-[0.98] sm:h-14"
               >
                 Search Jobs
               </button>
             </div>
 
-            {/* Remote */}
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-2 pt-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
+            {/* Filters */}
+            <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 px-1 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-2">
+              <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
                 <input
                   type="checkbox"
                   checked={remoteOnly}
@@ -522,7 +496,7 @@ export default function JobsPage() {
                       event.target.checked
                     )
                   }
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
 
                 <span>
@@ -530,14 +504,11 @@ export default function JobsPage() {
                 </span>
               </label>
 
-              {(keyword ||
-                location ||
-                language ||
-                remoteOnly) && (
+              {hasFilters && (
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  className="min-h-10 w-full rounded-lg border border-slate-200 px-4 text-sm font-semibold text-blue-600 transition hover:border-blue-200 hover:bg-blue-50 sm:w-auto sm:border-0 sm:px-2"
                 >
                   Clear all filters
                 </button>
@@ -548,10 +519,10 @@ export default function JobsPage() {
       </section>
 
       {/* Job results */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
               Latest Job Opportunities
             </h2>
 
@@ -564,7 +535,7 @@ export default function JobsPage() {
           </div>
 
           {language && (
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:py-2 sm:text-sm">
               🌐 {language}
             </div>
           )}
@@ -583,17 +554,17 @@ export default function JobsPage() {
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="animate-pulse rounded-2xl border border-slate-200 bg-white p-6"
+                className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
               >
-                <div className="h-6 w-2/3 rounded bg-slate-200" />
+                <div className="h-6 w-4/5 rounded bg-slate-200 sm:w-2/3" />
 
-                <div className="mt-3 h-4 w-1/3 rounded bg-slate-200" />
+                <div className="mt-3 h-4 w-2/3 rounded bg-slate-200 sm:w-1/3" />
 
                 <div className="mt-5 h-4 w-full rounded bg-slate-200" />
 
                 <div className="mt-2 h-4 w-5/6 rounded bg-slate-200" />
 
-                <div className="mt-6 h-10 w-28 rounded bg-slate-200" />
+                <div className="mt-6 h-10 w-full rounded bg-slate-200 sm:w-28" />
               </div>
             ))}
           </div>
@@ -603,12 +574,12 @@ export default function JobsPage() {
         {!loading &&
           !error &&
           jobs.length === 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-14 text-center shadow-sm sm:px-6 sm:py-16">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-2xl">
                 🔎
               </div>
 
-              <h3 className="mt-5 text-xl font-semibold text-slate-900">
+              <h3 className="mt-5 text-xl font-bold text-slate-900">
                 No jobs found
               </h3>
 
@@ -621,7 +592,7 @@ export default function JobsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-5 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="mt-5 min-h-11 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 Clear Filters
               </button>
@@ -645,34 +616,34 @@ export default function JobsPage() {
                 return (
                   <article
                     key={job.id}
-                    className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-200/60"
+                    className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-200/60 sm:p-6"
                   >
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
                       <div className="min-w-0 flex-1">
                         {/* Title */}
                         <div className="flex flex-wrap items-start gap-2">
                           <a
                             href={`/jobs/${job.id}`}
-                            className="text-xl font-bold leading-7 text-slate-900 transition hover:text-blue-700"
+                            className="text-lg font-extrabold leading-7 text-slate-900 transition hover:text-blue-700 sm:text-xl"
                           >
                             {job.title}
                           </a>
 
                           {job.is_remote && (
-                            <span className="mt-0.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                            <span className="mt-0.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
                               Remote
                             </span>
                           )}
 
                           {job.language && (
-                            <span className="mt-0.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                            <span className="mt-0.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
                               {job.language}
                             </span>
                           )}
                         </div>
 
                         {/* Company */}
-                        <p className="mt-2 text-sm font-semibold text-slate-700">
+                        <p className="mt-2 text-sm font-bold text-slate-700">
                           {companies[
                             job.company_id
                           ] ||
@@ -680,32 +651,40 @@ export default function JobsPage() {
                         </p>
 
                         {/* Metadata */}
-                        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+                        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500 sm:text-sm">
                           {job.location && (
                             <span className="inline-flex items-center gap-1.5">
                               <span>📍</span>
-                              {job.location}
+                              <span>
+                                {job.location}
+                              </span>
                             </span>
                           )}
 
                           {job.employment_type && (
                             <span className="inline-flex items-center gap-1.5">
                               <span>💼</span>
-                              {job.employment_type}
+                              <span>
+                                {job.employment_type}
+                              </span>
                             </span>
                           )}
 
                           {salary && (
                             <span className="inline-flex items-center gap-1.5">
                               <span>💰</span>
-                              {salary}
+                              <span>
+                                {salary}
+                              </span>
                             </span>
                           )}
 
                           {job.language && (
                             <span className="inline-flex items-center gap-1.5">
                               <span>🌐</span>
-                              {job.language}
+                              <span>
+                                {job.language}
+                              </span>
                             </span>
                           )}
                         </div>
@@ -723,7 +702,7 @@ export default function JobsPage() {
                         </p>
 
                         {/* Published */}
-                        <div className="mt-5 text-xs text-slate-400">
+                        <div className="mt-4 text-xs font-medium text-slate-400">
                           Published{" "}
                           {formatDate(
                             job.published_at
@@ -732,12 +711,12 @@ export default function JobsPage() {
                       </div>
 
                       {/* Apply */}
-                      <div className="flex shrink-0 items-center lg:pt-1">
+                      <div className="flex w-full shrink-0 items-center lg:w-auto lg:pt-1">
                         <a
                           href={job.apply_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md lg:w-auto"
+                          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md active:scale-[0.98] lg:w-auto"
                         >
                           Apply Now
                           <span className="transition-transform group-hover:translate-x-0.5">
@@ -756,7 +735,7 @@ export default function JobsPage() {
         {!loading &&
           !error &&
           totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:gap-4">
               <button
                 type="button"
                 disabled={page === 1}
@@ -766,18 +745,18 @@ export default function JobsPage() {
                       current - 1
                   )
                 }
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 ← Previous
               </button>
 
-              <div className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-slate-600 shadow-sm">
+              <div className="order-first rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-slate-600 shadow-sm sm:order-none">
                 Page{" "}
-                <span className="font-semibold text-slate-900">
+                <span className="font-bold text-slate-900">
                   {page}
                 </span>{" "}
                 of{" "}
-                <span className="font-semibold text-slate-900">
+                <span className="font-bold text-slate-900">
                   {totalPages}
                 </span>
               </div>
@@ -793,7 +772,7 @@ export default function JobsPage() {
                       current + 1
                   )
                 }
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               >
                 Next →
               </button>

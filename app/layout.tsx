@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "HUNTARA — Find Your Next Job, Every Day.",
@@ -15,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="flex min-h-screen flex-col bg-white text-gray-900 antialiased">
+    <html lang="en" className={inter.variable}>
+      <body className="flex min-h-screen flex-col bg-white text-gray-900 antialiased font-sans">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

@@ -41,15 +41,11 @@ const LANGUAGE_OPTIONS = [
   "Chinese",
 ];
 
-function cleanJobDescription(
-  description: string
-): string {
+function cleanJobDescription(description: string): string {
   let cleaned = description;
 
   for (let i = 0; i < 5; i++) {
-    const textarea =
-      document.createElement("textarea");
-
+    const textarea = document.createElement("textarea");
     textarea.innerHTML = cleaned;
 
     const decoded = textarea.value;
@@ -72,9 +68,7 @@ function cleanJobDescription(
     )
     .replace(/<[^>]*>/g, "");
 
-  const textarea =
-    document.createElement("textarea");
-
+  const textarea = document.createElement("textarea");
   textarea.innerHTML = cleaned;
 
   return textarea.value
@@ -82,9 +76,7 @@ function cleanJobDescription(
     .trim();
 }
 
-function formatDate(
-  date: string | null
-): string {
+function formatDate(date: string | null): string {
   if (!date) {
     return "Date unavailable";
   }
@@ -95,19 +87,14 @@ function formatDate(
     return "Date unavailable";
   }
 
-  return parsedDate.toLocaleDateString(
-    "en-IN",
-    {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }
-  );
+  return parsedDate.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function formatSalary(
-  job: Job
-): string | null {
+function formatSalary(job: Job): string | null {
   if (
     job.salary_min === null &&
     job.salary_max === null
@@ -115,8 +102,7 @@ function formatSalary(
     return null;
   }
 
-  const currency =
-    job.salary_currency || "";
+  const currency = job.salary_currency || "";
 
   if (
     job.salary_min !== null &&
@@ -137,35 +123,20 @@ function formatSalary(
 }
 
 export default function JobsPage() {
-  const [jobs, setJobs] =
-    useState<Job[]>([]);
-
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [companies, setCompanies] =
     useState<Record<string, string>>({});
 
-  const [keyword, setKeyword] =
-    useState("");
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState("");
+  const [language, setLanguage] = useState("");
+  const [remoteOnly, setRemoteOnly] = useState(false);
 
-  const [location, setLocation] =
-    useState("");
+  const [page, setPage] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
 
-  const [language, setLanguage] =
-    useState("");
-
-  const [remoteOnly, setRemoteOnly] =
-    useState(false);
-
-  const [page, setPage] =
-    useState(1);
-
-  const [totalJobs, setTotalJobs] =
-    useState(0);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadJobs() {
@@ -205,17 +176,14 @@ export default function JobsPage() {
          * and company name.
          */
         if (keyword.trim()) {
-          const searchTerm =
-            keyword.trim();
+          const searchTerm = keyword.trim();
 
-          const safeSearchTerm =
-            searchTerm.replace(
-              /[%_,()]/g,
-              " "
-            );
+          const safeSearchTerm = searchTerm.replace(
+            /[%_,()]/g,
+            " "
+          );
 
-          const searchPattern =
-            `%${safeSearchTerm}%`;
+          const searchPattern = `%${safeSearchTerm}%`;
 
           /*
            * First find companies whose
@@ -227,10 +195,7 @@ export default function JobsPage() {
           } = await supabase
             .from("companies")
             .select("id")
-            .ilike(
-              "name",
-              searchPattern
-            );
+            .ilike("name", searchPattern);
 
           if (companySearchError) {
             throw companySearchError;
@@ -274,46 +239,31 @@ export default function JobsPage() {
 
         if (language) {
           if (language === "Unknown") {
-            query = query.is(
-              "language",
-              null
-            );
+            query = query.is("language", null);
           } else {
-            query = query.eq(
-              "language",
-              language
-            );
+            query = query.eq("language", language);
           }
         }
 
         if (remoteOnly) {
-          query = query.eq(
-            "is_remote",
-            true
-          );
+          query = query.eq("is_remote", true);
         }
 
         const from =
-          (page - 1) *
-          JOBS_PER_PAGE;
+          (page - 1) * JOBS_PER_PAGE;
 
         const to =
-          from +
-          JOBS_PER_PAGE -
-          1;
+          from + JOBS_PER_PAGE - 1;
 
         const {
           data,
           error: jobsError,
           count,
         } = await query
-          .order(
-            "published_at",
-            {
-              ascending: false,
-              nullsFirst: false,
-            }
-          )
+          .order("published_at", {
+            ascending: false,
+            nullsFirst: false,
+          })
           .range(from, to);
 
         if (jobsError) {
@@ -341,10 +291,7 @@ export default function JobsPage() {
           } = await supabase
             .from("companies")
             .select("id, name")
-            .in(
-              "id",
-              companyIds
-            );
+            .in("id", companyIds);
 
           if (companyError) {
             throw companyError;
@@ -356,19 +303,13 @@ export default function JobsPage() {
           > = {};
 
           (
-            (companyData as Company[]) ||
-            []
-          ).forEach(
-            (company) => {
-              companyMap[
-                company.id
-              ] = company.name;
-            }
-          );
+            (companyData as Company[]) || []
+          ).forEach((company) => {
+            companyMap[company.id] =
+              company.name;
+          });
 
-          setCompanies(
-            companyMap
-          );
+          setCompanies(companyMap);
         } else {
           setCompanies({});
         }
@@ -431,11 +372,9 @@ export default function JobsPage() {
     setPage(1);
   }
 
-  const totalPages =
-    Math.ceil(
-      totalJobs /
-        JOBS_PER_PAGE
-    );
+  const totalPages = Math.ceil(
+    totalJobs / JOBS_PER_PAGE
+  );
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -471,7 +410,7 @@ export default function JobsPage() {
                 </label>
 
                 <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
-                  🔍
+                  🔎
                 </div>
 
                 <input
@@ -641,24 +580,22 @@ export default function JobsPage() {
         {/* Loading */}
         {loading && (
           <div className="space-y-4">
-            {[1, 2, 3].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="animate-pulse rounded-2xl border border-slate-200 bg-white p-6"
-                >
-                  <div className="h-6 w-2/3 rounded bg-slate-200" />
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className="animate-pulse rounded-2xl border border-slate-200 bg-white p-6"
+              >
+                <div className="h-6 w-2/3 rounded bg-slate-200" />
 
-                  <div className="mt-3 h-4 w-1/3 rounded bg-slate-200" />
+                <div className="mt-3 h-4 w-1/3 rounded bg-slate-200" />
 
-                  <div className="mt-5 h-4 w-full rounded bg-slate-200" />
+                <div className="mt-5 h-4 w-full rounded bg-slate-200" />
 
-                  <div className="mt-2 h-4 w-5/6 rounded bg-slate-200" />
+                <div className="mt-2 h-4 w-5/6 rounded bg-slate-200" />
 
-                  <div className="mt-6 h-10 w-28 rounded bg-slate-200" />
-                </div>
-              )
-            )}
+                <div className="mt-6 h-10 w-28 rounded bg-slate-200" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -714,9 +651,12 @@ export default function JobsPage() {
                       <div className="min-w-0 flex-1">
                         {/* Title */}
                         <div className="flex flex-wrap items-start gap-2">
-                          <h3 className="text-xl font-bold leading-7 text-slate-900 transition group-hover:text-blue-700">
+                          <a
+                            href={`/jobs/${job.id}`}
+                            className="text-xl font-bold leading-7 text-slate-900 transition hover:text-blue-700"
+                          >
                             {job.title}
-                          </h3>
+                          </a>
 
                           {job.is_remote && (
                             <span className="mt-0.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
@@ -743,38 +683,28 @@ export default function JobsPage() {
                         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
                           {job.location && (
                             <span className="inline-flex items-center gap-1.5">
-                              <span>
-                                📍
-                              </span>
+                              <span>📍</span>
                               {job.location}
                             </span>
                           )}
 
                           {job.employment_type && (
                             <span className="inline-flex items-center gap-1.5">
-                              <span>
-                                💼
-                              </span>
-                              {
-                                job.employment_type
-                              }
+                              <span>💼</span>
+                              {job.employment_type}
                             </span>
                           )}
 
                           {salary && (
                             <span className="inline-flex items-center gap-1.5">
-                              <span>
-                                💰
-                              </span>
+                              <span>💰</span>
                               {salary}
                             </span>
                           )}
 
                           {job.language && (
                             <span className="inline-flex items-center gap-1.5">
-                              <span>
-                                🌐
-                              </span>
+                              <span>🌐</span>
                               {job.language}
                             </span>
                           )}
@@ -804,9 +734,7 @@ export default function JobsPage() {
                       {/* Apply */}
                       <div className="flex shrink-0 items-center lg:pt-1">
                         <a
-                          href={
-                            job.apply_url
-                          }
+                          href={job.apply_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md lg:w-auto"

@@ -5,7 +5,10 @@ function normalizeCompanyName(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/[.,'"]/g, "")
-    .replace(/\b(gmbh|inc|ltd|llc|corp|corporation|limited)\b/g, "")
+    .replace(
+      /\b(gmbh|inc|ltd|llc|corp|corporation|limited)\b/g,
+      ""
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -28,12 +31,14 @@ export async function findOrCreateCompany(
     throw new Error("Company name cannot be empty.");
   }
 
-  const normalizedIncoming = normalizeCompanyName(originalName);
+  const normalizedIncoming =
+    normalizeCompanyName(originalName);
 
-  const { data: companies, error: searchError } = await supabase
-    .from("companies")
-    .select("id, name, slug")
-    .limit(500);
+  const { data: companies, error: searchError } =
+    await supabase
+      .from("companies")
+      .select("id, name, slug")
+      .limit(500);
 
   if (searchError) {
     throw new Error(
@@ -43,7 +48,8 @@ export async function findOrCreateCompany(
 
   const existingCompany = companies?.find(
     (company) =>
-      normalizeCompanyName(company.name) === normalizedIncoming
+      normalizeCompanyName(company.name) ===
+      normalizedIncoming
   );
 
   if (existingCompany) {
@@ -60,7 +66,7 @@ export async function findOrCreateCompany(
     const { data: existingSlug, error: slugError } =
       await supabase
         .from("companies")
-        .select("id")
+        .select("id, name")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -74,6 +80,13 @@ export async function findOrCreateCompany(
       break;
     }
 
+    if (
+      normalizeCompanyName(existingSlug.name) ===
+      normalizedIncoming
+    ) {
+      return existingSlug.id;
+    }
+
     slug = `${baseSlug}-${counter}`;
     counter++;
   }
@@ -81,20 +94,47 @@ export async function findOrCreateCompany(
   const { data: newCompany, error: insertError } =
     await supabase
       .from("companies")
-      .insert({
-        name: originalName,
-        slug,
-      })
+      .upsert(
+        {
+          name: originalName,
+          slug,
+        },
+        {
+          onConflict: "slug",
+          ignoreDuplicates: true,
+        }
+      )
       .select("id")
-      .single();
+      .maybeSingle();
 
-  if (insertError || !newCompany) {
+  if (insertError) {
     throw new Error(
-      `Failed to create company: ${
-        insertError?.message ?? "Unknown error"
-      }`
+      `Failed to create company: ${insertError.message}`
     );
   }
 
-  return newCompany.id;
+  if (newCompany) {
+    return newCompany.id;
+  }
+
+  const { data: existingAfterInsert, error: retryError } =
+    await supabase
+      .from("companies")
+      .select("id, name")
+      .eq("slug", slug)
+      .maybeSingle();
+
+  if (retryError) {
+    throw new Error(
+      `Failed to find company after insert: ${retryError.message}`
+    );
+  }
+
+  if (!existingAfterInsert) {
+    throw new Error(
+      "Company could not be created or found after insert."
+    );
+  }
+
+  return existingAfterInsert.id;
 }

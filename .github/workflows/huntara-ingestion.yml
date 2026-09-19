@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: Run HUNTARA Greenhouse ingestion
         run: |
-          curl -X POST "https://huntara.vercel.app/api/internal/ingest/greenhouse" \
+          curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/greenhouse" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"

@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { NormalizedJob } from "./normalize";
+
+interface DuplicateCheckJob {
+  sourceId: string;
+  sourceJobId: string;
+  publishedAt: string | null;
+  title: string;
+}
 
 export interface DuplicateResult {
   existingJobId: string | null;
@@ -26,11 +32,14 @@ function similarity(a: string, b: string): number {
   const firstWords = new Set(first.split(" "));
   const secondWords = new Set(second.split(" "));
 
-  const intersection = [...firstWords].filter((word) =>
-    secondWords.has(word)
+  const intersection = [...firstWords].filter(
+    (word) => secondWords.has(word)
   );
 
-  const union = new Set([...firstWords, ...secondWords]);
+  const union = new Set([
+    ...firstWords,
+    ...secondWords,
+  ]);
 
   if (union.size === 0) {
     return 0;
@@ -41,17 +50,18 @@ function similarity(a: string, b: string): number {
 
 export async function findDuplicateJob(
   supabase: SupabaseClient,
-  job: NormalizedJob,
+  job: DuplicateCheckJob,
   companyId: string
 ): Promise<DuplicateResult> {
-  // 1. Check whether this exact source job was already imported.
-  const { data: sourceRecord, error: sourceRecordError } =
-    await supabase
-      .from("job_source_records")
-      .select("id, job_id")
-      .eq("source_id", job.sourceId)
-      .eq("external_job_id", job.sourceJobId)
-      .maybeSingle();
+  const {
+    data: sourceRecord,
+    error: sourceRecordError,
+  } = await supabase
+    .from("job_source_records")
+    .select("id, job_id")
+    .eq("source_id", job.sourceId)
+    .eq("external_job_id", job.sourceJobId)
+    .maybeSingle();
 
   if (sourceRecordError) {
     throw new Error(
@@ -67,7 +77,6 @@ export async function findDuplicateJob(
     };
   }
 
-  // 2. If there is no publication date, skip cross-source duplicate matching.
   if (!job.publishedAt) {
     return {
       existingJobId: null,
@@ -76,25 +85,30 @@ export async function findDuplicateJob(
     };
   }
 
-  const publishedTime = new Date(job.publishedAt).getTime();
+  const publishedTime = new Date(
+    job.publishedAt
+  ).getTime();
 
-  // 3. Look for jobs from the same company within +/- 14 days.
   const windowStart = new Date(
-    publishedTime - 14 * 24 * 60 * 60 * 1000
+    publishedTime -
+      14 * 24 * 60 * 60 * 1000
   ).toISOString();
 
   const windowEnd = new Date(
-    publishedTime + 14 * 24 * 60 * 60 * 1000
+    publishedTime +
+      14 * 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const { data: candidates, error: candidateError } =
-    await supabase
-      .from("jobs")
-      .select("id, title, published_at")
-      .eq("company_id", companyId)
-      .gte("published_at", windowStart)
-      .lte("published_at", windowEnd)
-      .limit(50);
+  const {
+    data: candidates,
+    error: candidateError,
+  } = await supabase
+    .from("jobs")
+    .select("id, title, published_at")
+    .eq("company_id", companyId)
+    .gte("published_at", windowStart)
+    .lte("published_at", windowEnd)
+    .limit(50);
 
   if (candidateError) {
     throw new Error(
@@ -102,14 +116,18 @@ export async function findDuplicateJob(
     );
   }
 
-  // 4. Compare titles.
-  const matchingCandidate = candidates?.find(
-    (candidate) =>
-      similarity(job.title, candidate.title) >= 0.75
-  );
+  const matchingCandidate =
+    candidates?.find(
+      (candidate) =>
+        similarity(
+          job.title,
+          candidate.title
+        ) >= 0.75
+    );
 
   return {
-    existingJobId: matchingCandidate?.id ?? null,
+    existingJobId:
+      matchingCandidate?.id ?? null,
     sourceRecordId: null,
     isExistingSourceRecord: false,
   };

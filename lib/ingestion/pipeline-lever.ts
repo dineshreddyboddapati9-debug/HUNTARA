@@ -2,6 +2,7 @@ import { fetchLeverJobs } from "./adapters/lever";
 import { findOrCreateCompany } from "./companies";
 import { findDuplicateJob } from "./duplicates";
 import { normalizeLeverJob } from "./normalize-lever";
+import { expireMissingJobs } from "./expire-missing-jobs";
 import { supabaseAdmin } from "../supabase/admin";
 
 const BATCH_SIZE = 10;
@@ -35,6 +36,8 @@ export async function runLeverIngestion(
   let updated = 0;
   let skipped = 0;
   let errors = 0;
+
+  let companyId: string | null = null;
 
   for (
     let start = 0;
@@ -79,38 +82,69 @@ export async function runLeverIngestion(
             };
           }
 
-          const companyId =
+          const currentCompanyId =
             await findOrCreateCompany(
               supabaseAdmin,
               normalizedJob.companyName
             );
 
+          companyId = currentCompanyId;
+
           const duplicate =
             await findDuplicateJob(
               supabaseAdmin,
               normalizedJob,
-              companyId
+              currentCompanyId
             );
 
           if (
             duplicate.isExistingSourceRecord
           ) {
-            await supabaseAdmin
-              .from("job_source_records")
-              .update({
-                external_url:
-                  normalizedJob.applyUrl,
-                raw_data:
-                  normalizedJob.rawData,
-                last_seen_at:
-                  new Date().toISOString(),
-                updated_at:
-                  new Date().toISOString(),
-              })
-              .eq(
-                "id",
-                duplicate.sourceRecordId
+            const now =
+              new Date().toISOString();
+
+            const { error: recordError } =
+              await supabaseAdmin
+                .from("job_source_records")
+                .update({
+                  external_url:
+                    normalizedJob.applyUrl,
+                  raw_data:
+                    normalizedJob.rawData,
+                  last_seen_at: now,
+                  updated_at: now,
+                })
+                .eq(
+                  "id",
+                  duplicate.sourceRecordId
+                );
+
+            if (recordError) {
+              throw new Error(
+                `Failed to update source record: ${recordError.message}`
               );
+            }
+
+            if (duplicate.existingJobId) {
+              const { error: jobError } =
+                await supabaseAdmin
+                  .from("jobs")
+                  .update({
+                    is_active: true,
+                    expires_at: null,
+                    updated_at: now,
+                  })
+                  .eq(
+                    "id",
+                    duplicate.existingJobId
+                  );
+
+              if (jobError) {
+                throw new Error(
+                  `Failed to reactivate job: ${jobError.message}`
+                );
+              }
+            }
 
             return {
               created: 0,
@@ -128,7 +162,7 @@ export async function runLeverIngestion(
               await supabaseAdmin
                 .from("jobs")
                 .update({
-                  company_id: companyId,
+                  company_id: currentCompanyId,
                   source_id: source.id,
                   title: normalizedJob.title,
                   description:
@@ -184,7 +218,8 @@ export async function runLeverIngestion(
             await supabaseAdmin
               .from("jobs")
               .insert({
-                company_id: companyId,
+                company_id:
+                  currentCompanyId,
                 source_id: source.id,
                 title: normalizedJob.title,
                 slug: normalizedJob.slug,
@@ -233,6 +268,9 @@ export async function runLeverIngestion(
 
           jobId = newJob.id;
 
+          const now =
+            new Date().toISOString();
+
           const { error: recordError } =
             await supabaseAdmin
               .from("job_source_records")
@@ -246,10 +284,8 @@ export async function runLeverIngestion(
                     normalizedJob.applyUrl,
                   raw_data:
                     normalizedJob.rawData,
-                  last_seen_at:
-                    new Date().toISOString(),
-                  updated_at:
-                    new Date().toISOString(),
+                  last_seen_at: now,
+                  updated_at: now,
                 },
                 {
                   onConflict:
@@ -300,6 +336,19 @@ export async function runLeverIngestion(
     }
   }
 
+  let deactivated = 0;
+
+  if (jobs.length > 0 && companyId) {
+    const expiryResult =
+      await expireMissingJobs(
+        source.id,
+        companyId
+      );
+
+    deactivated =
+      expiryResult.deactivated;
+  }
+
   const { error: syncError } =
     await supabaseAdmin
       .from("job_sources")
@@ -325,5 +374,6 @@ export async function runLeverIngestion(
     updated,
     skipped,
     errors,
+    deactivated,
   };
 }

@@ -122,8 +122,26 @@ export default function JobsPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filtersReady, setFiltersReady] = useState(false);
 
+  // Read search values from the homepage URL
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    setKeyword(params.get("keyword") || "");
+    setLocation(params.get("location") || "");
+    setLanguage(params.get("language") || "");
+    setRemoteOnly(params.get("remote") === "true");
+
+    setFiltersReady(true);
+  }, []);
+
+  // Load jobs whenever filters or page changes
+  useEffect(() => {
+    if (!filtersReady) {
+      return;
+    }
+
     async function loadJobs() {
       setLoading(true);
       setError("");
@@ -155,6 +173,7 @@ export default function JobsPage() {
           )
           .eq("is_active", true);
 
+        // Keyword search
         if (keyword.trim()) {
           const searchTerm = keyword.trim();
 
@@ -198,6 +217,7 @@ export default function JobsPage() {
           );
         }
 
+        // Location search
         if (location.trim()) {
           query = query.ilike(
             "location",
@@ -205,6 +225,7 @@ export default function JobsPage() {
           );
         }
 
+        // Language filter
         if (language) {
           if (language === "Unknown") {
             query = query.is("language", null);
@@ -213,6 +234,7 @@ export default function JobsPage() {
           }
         }
 
+        // Remote filter
         if (remoteOnly) {
           query = query.eq("is_remote", true);
         }
@@ -244,6 +266,7 @@ export default function JobsPage() {
         setJobs(loadedJobs);
         setTotalJobs(count || 0);
 
+        // Load company names
         const companyIds = [
           ...new Set(
             loadedJobs.map(
@@ -297,6 +320,7 @@ export default function JobsPage() {
 
     loadJobs();
   }, [
+    filtersReady,
     keyword,
     location,
     language,
@@ -338,6 +362,12 @@ export default function JobsPage() {
     setLanguage("");
     setRemoteOnly(false);
     setPage(1);
+
+    window.history.replaceState(
+      {},
+      "",
+      "/jobs"
+    );
   }
 
   const totalPages = Math.ceil(
@@ -479,6 +509,7 @@ export default function JobsPage() {
               {/* Search button */}
               <button
                 type="button"
+                onClick={() => setPage(1)}
                 className="h-12 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md active:scale-[0.98] sm:h-14"
               >
                 Search Jobs

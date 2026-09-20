@@ -2,31 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { runGreenhouseIngestion } from "@/lib/ingestion/pipeline-greenhouse";
 import { GREENHOUSE_COMPANIES } from "@/lib/ingestion/greenhouse-companies";
 
-export async function POST(
-  request: NextRequest
-) {
+const COMPANY_BATCH_SIZE = 3;
+
+export async function POST(request: NextRequest) {
   try {
-    const configuredSecret =
-      process.env.INGESTION_SECRET;
+    const configuredSecret = process.env.INGESTION_SECRET;
 
     if (!configuredSecret) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "INGESTION_SECRET is not configured.",
+          error: "INGESTION_SECRET is not configured.",
         },
         { status: 500 }
       );
     }
 
-    const requestSecret =
-      request.headers.get("x-ingestion-secret");
+    const requestSecret = request.headers.get("x-ingestion-secret");
 
-    if (
-      !requestSecret ||
-      requestSecret !== configuredSecret
-    ) {
+    if (!requestSecret || requestSecret !== configuredSecret) {
       return NextResponse.json(
         {
           success: false,
@@ -38,28 +32,42 @@ export async function POST(
 
     const results = [];
 
-    for (const company of GREENHOUSE_COMPANIES) {
-      try {
-        const result =
-          await runGreenhouseIngestion(
-            company.boardToken,
-            company.companyName
-          );
+    for (
+      let start = 0;
+      start < GREENHOUSE_COMPANIES.length;
+      start += COMPANY_BATCH_SIZE
+    ) {
+      const companyBatch = GREENHOUSE_COMPANIES.slice(
+        start,
+        start + COMPANY_BATCH_SIZE
+      );
 
-        results.push({
-          success: true,
-          ...result,
-        });
-      } catch (error) {
-        results.push({
-          success: false,
-          company: company.companyName,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Unknown error.",
-        });
-      }
+      const batchResults = await Promise.all(
+        companyBatch.map(async (company) => {
+          try {
+            const result = await runGreenhouseIngestion(
+              company.boardToken,
+              company.companyName
+            );
+
+            return {
+              success: true,
+              ...result,
+            };
+          } catch (error) {
+            return {
+              success: false,
+              company: company.companyName,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Unknown error.",
+            };
+          }
+        })
+      );
+
+      results.push(...batchResults);
     }
 
     const hasErrors = results.some(
@@ -76,10 +84,7 @@ export async function POST(
       }
     );
   } catch (error) {
-    console.error(
-      "Greenhouse ingestion failed:",
-      error
-    );
+    console.error("Greenhouse ingestion failed:", error);
 
     return NextResponse.json(
       {

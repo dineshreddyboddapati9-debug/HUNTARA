@@ -6,7 +6,7 @@ import { findOrCreateCompany } from "./companies";
 import { findDuplicateJob } from "./duplicates";
 import { expireMissingJobs } from "./expire-missing-jobs";
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 25;
 
 export interface AshbyIngestionResult {
   companiesProcessed: number;

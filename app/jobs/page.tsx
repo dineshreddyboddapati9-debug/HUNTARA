@@ -117,6 +117,12 @@ export default function JobsPage() {
   const [language, setLanguage] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
 
+  const [appliedKeyword, setAppliedKeyword] = useState("");
+  const [appliedLocation, setAppliedLocation] = useState("");
+  const [appliedLanguage, setAppliedLanguage] = useState("");
+  const [appliedRemoteOnly, setAppliedRemoteOnly] =
+    useState(false);
+
   const [page, setPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
 
@@ -128,15 +134,32 @@ export default function JobsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    setKeyword(params.get("keyword") || "");
-    setLocation(params.get("location") || "");
-    setLanguage(params.get("language") || "");
-    setRemoteOnly(params.get("remote") === "true");
+    const initialKeyword =
+      params.get("keyword") || "";
+
+    const initialLocation =
+      params.get("location") || "";
+
+    const initialLanguage =
+      params.get("language") || "";
+
+    const initialRemote =
+      params.get("remote") === "true";
+
+    setKeyword(initialKeyword);
+    setLocation(initialLocation);
+    setLanguage(initialLanguage);
+    setRemoteOnly(initialRemote);
+
+    setAppliedKeyword(initialKeyword);
+    setAppliedLocation(initialLocation);
+    setAppliedLanguage(initialLanguage);
+    setAppliedRemoteOnly(initialRemote);
 
     setFiltersReady(true);
   }, []);
 
-  // Load jobs whenever filters or page changes
+  // Load jobs whenever applied filters or page changes
   useEffect(() => {
     if (!filtersReady) {
       return;
@@ -174,15 +197,18 @@ export default function JobsPage() {
           .eq("is_active", true);
 
         // Keyword search
-        if (keyword.trim()) {
-          const searchTerm = keyword.trim();
+        if (appliedKeyword.trim()) {
+          const searchTerm =
+            appliedKeyword.trim();
 
-          const safeSearchTerm = searchTerm.replace(
-            /[%_,()]/g,
-            " "
-          );
+          const safeSearchTerm =
+            searchTerm.replace(
+              /[%_,()]/g,
+              " "
+            );
 
-          const searchPattern = `%${safeSearchTerm}%`;
+          const searchPattern =
+            `%${safeSearchTerm}%`;
 
           const {
             data: matchingCompanies,
@@ -190,7 +216,10 @@ export default function JobsPage() {
           } = await supabase
             .from("companies")
             .select("id")
-            .ilike("name", searchPattern);
+            .ilike(
+              "name",
+              searchPattern
+            );
 
           if (companySearchError) {
             throw companySearchError;
@@ -218,25 +247,36 @@ export default function JobsPage() {
         }
 
         // Location search
-        if (location.trim()) {
+        if (appliedLocation.trim()) {
           query = query.ilike(
             "location",
-            `%${location.trim()}%`
+            `%${appliedLocation.trim()}%`
           );
         }
 
         // Language filter
-        if (language) {
-          if (language === "Unknown") {
-            query = query.is("language", null);
+        if (appliedLanguage) {
+          if (
+            appliedLanguage === "Unknown"
+          ) {
+            query = query.is(
+              "language",
+              null
+            );
           } else {
-            query = query.eq("language", language);
+            query = query.eq(
+              "language",
+              appliedLanguage
+            );
           }
         }
 
         // Remote filter
-        if (remoteOnly) {
-          query = query.eq("is_remote", true);
+        if (appliedRemoteOnly) {
+          query = query.eq(
+            "is_remote",
+            true
+          );
         }
 
         const from =
@@ -282,7 +322,10 @@ export default function JobsPage() {
           } = await supabase
             .from("companies")
             .select("id, name")
-            .in("id", companyIds);
+            .in(
+              "id",
+              companyIds
+            );
 
           if (companyError) {
             throw companyError;
@@ -294,7 +337,8 @@ export default function JobsPage() {
           > = {};
 
           (
-            (companyData as Company[]) || []
+            (companyData as Company[]) ||
+            []
           ).forEach((company) => {
             companyMap[company.id] =
               company.name;
@@ -321,39 +365,85 @@ export default function JobsPage() {
     loadJobs();
   }, [
     filtersReady,
-    keyword,
-    location,
-    language,
-    remoteOnly,
+    appliedKeyword,
+    appliedLocation,
+    appliedLanguage,
+    appliedRemoteOnly,
     page,
   ]);
+
+  function handleSearch() {
+    setAppliedKeyword(keyword);
+    setAppliedLocation(location);
+    setAppliedLanguage(language);
+    setAppliedRemoteOnly(remoteOnly);
+    setPage(1);
+
+    const params =
+      new URLSearchParams();
+
+    if (keyword.trim()) {
+      params.set(
+        "keyword",
+        keyword.trim()
+      );
+    }
+
+    if (location.trim()) {
+      params.set(
+        "location",
+        location.trim()
+      );
+    }
+
+    if (language) {
+      params.set(
+        "language",
+        language
+      );
+    }
+
+    if (remoteOnly) {
+      params.set(
+        "remote",
+        "true"
+      );
+    }
+
+    const queryString =
+      params.toString();
+
+    window.history.replaceState(
+      {},
+      "",
+      queryString
+        ? `/jobs?${queryString}`
+        : "/jobs"
+    );
+  }
 
   function handleKeywordChange(
     value: string
   ) {
     setKeyword(value);
-    setPage(1);
   }
 
   function handleLocationChange(
     value: string
   ) {
     setLocation(value);
-    setPage(1);
   }
 
   function handleLanguageChange(
     value: string
   ) {
     setLanguage(value);
-    setPage(1);
   }
 
   function handleRemoteChange(
     value: boolean
   ) {
     setRemoteOnly(value);
-    setPage(1);
   }
 
   function clearFilters() {
@@ -361,6 +451,12 @@ export default function JobsPage() {
     setLocation("");
     setLanguage("");
     setRemoteOnly(false);
+
+    setAppliedKeyword("");
+    setAppliedLocation("");
+    setAppliedLanguage("");
+    setAppliedRemoteOnly(false);
+
     setPage(1);
 
     window.history.replaceState(
@@ -426,6 +522,14 @@ export default function JobsPage() {
                       event.target.value
                     )
                   }
+                  onKeyDown={(event) => {
+                    if (
+                      event.key ===
+                      "Enter"
+                    ) {
+                      handleSearch();
+                    }
+                  }}
                   placeholder="Job title, skill or keyword"
                   className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 sm:h-14"
                 />
@@ -453,6 +557,14 @@ export default function JobsPage() {
                       event.target.value
                     )
                   }
+                  onKeyDown={(event) => {
+                    if (
+                      event.key ===
+                      "Enter"
+                    ) {
+                      handleSearch();
+                    }
+                  }}
                   placeholder="City or location"
                   className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 sm:h-14"
                 />
@@ -509,7 +621,7 @@ export default function JobsPage() {
               {/* Search button */}
               <button
                 type="button"
-                onClick={() => setPage(1)}
+                onClick={handleSearch}
                 className="h-12 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md active:scale-[0.98] sm:h-14"
               >
                 Search Jobs
@@ -565,9 +677,9 @@ export default function JobsPage() {
             )}
           </div>
 
-          {language && (
+          {appliedLanguage && (
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 sm:px-4 sm:py-2 sm:text-sm">
-              🌐 {language}
+              🌐 {appliedLanguage}
             </div>
           )}
         </div>

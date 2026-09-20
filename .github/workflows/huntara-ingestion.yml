@@ -33,3 +33,9 @@ jobs:
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/ashby" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
+
+      - name: Run HUNTARA Jobicy ingestion
+        run: |
+          curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/jobicy" \
+            -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
+            -H "Content-Type: application/json"

@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  greenhouse:
+  ingest:
     runs-on: ubuntu-latest
+
     steps:
       - name: Run HUNTARA Greenhouse ingestion
         run: |
@@ -15,45 +16,30 @@ jobs:
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
 
-  lever:
-    runs-on: ubuntu-latest
-    steps:
       - name: Run HUNTARA Lever ingestion
         run: |
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/lever" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
 
-  smartrecruiters:
-    runs-on: ubuntu-latest
-    steps:
       - name: Run HUNTARA SmartRecruiters ingestion
         run: |
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/smartrecruiters" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
 
-  ashby:
-    runs-on: ubuntu-latest
-    steps:
       - name: Run HUNTARA Ashby ingestion
         run: |
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/ashby" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
 
-  jobicy:
-    runs-on: ubuntu-latest
-    steps:
       - name: Run HUNTARA Jobicy ingestion
         run: |
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/jobicy" \
             -H "x-ingestion-secret: ${{ secrets.HUNTARA_INGESTION_SECRET }}" \
             -H "Content-Type: application/json"
 
-  remoteok:
-    runs-on: ubuntu-latest
-    steps:
       - name: Run HUNTARA Remote OK ingestion
         run: |
           curl --fail-with-body -X POST "https://huntara.vercel.app/api/internal/ingest/remoteok" \
